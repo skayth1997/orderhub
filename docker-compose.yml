@@ -35,6 +35,13 @@ services:
       - "5672:5672"
       - "15672:15672"
 
+  localstack:
+    image: localstack/localstack:3.8
+    environment:
+      SERVICES: sqs
+    ports:
+      - "4566:4566"
+
   redis:
     image: redis:7
     ports:

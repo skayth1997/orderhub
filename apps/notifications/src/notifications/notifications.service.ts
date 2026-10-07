@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import type { StockEvent } from '../events/events.js';
 import { RabbitService } from '../rabbit/rabbit.service.js';
+import { SqsService } from '../sqs/sqs.service.js';
 import { Notification } from './notification.schema.js';
 
 const DUPLICATE_KEY_ERROR = 11000;
@@ -15,6 +16,7 @@ export class NotificationsService implements OnModuleInit {
     @InjectModel(Notification.name)
     private readonly model: Model<Notification>,
     private readonly rabbit: RabbitService,
+    private readonly sqs: SqsService,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -34,13 +36,15 @@ export class NotificationsService implements OnModuleInit {
         orderId: event.orderId,
         message,
       });
-      this.rabbit.publishEmailJob({
+      const job = {
         notificationId: String(saved._id),
         tenantId: event.tenantId,
         orderId: event.orderId,
         product: event.product,
         message,
-      });
+      };
+      this.rabbit.publishEmailJob(job);
+      await this.sqs.publishSmsJob(job);
       return saved;
     } catch (error) {
       if ((error as { code?: number }).code === DUPLICATE_KEY_ERROR) {
