@@ -4,13 +4,17 @@ import type { FormEvent } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import { useAuth } from '../auth';
-import { Card, ErrorText, Field, buttonClass, inputClass } from '../ui';
+import { useToast } from '../toast';
+import { ErrorBox, Field, buttonClass, inputClass } from '../ui';
+import { AuthShell } from './AuthShell';
 
 export function Login() {
   const { token, login } = useAuth();
   const navigate = useNavigate();
+  const notify = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [submitted, setSubmitted] = useState(false);
 
   const mutation = useMutation({
     mutationFn: () =>
@@ -20,6 +24,7 @@ export function Login() {
       }),
     onSuccess: (result) => {
       login(result.accessToken);
+      notify('Welcome back!');
       navigate('/orders');
     },
   });
@@ -28,47 +33,55 @@ export function Login() {
     return <Navigate to="/orders" replace />;
   }
 
+  const emailError = !/^\S+@\S+\.\S+$/.test(email)
+    ? 'Enter a valid email address.'
+    : undefined;
+  const passwordError = !password ? 'Enter your password.' : undefined;
+
   function submit(event: FormEvent) {
     event.preventDefault();
-    mutation.mutate();
+    setSubmitted(true);
+    if (!emailError && !passwordError) {
+      mutation.mutate();
+    }
   }
 
   return (
-    <Card title="Log in" narrow>
-      <form onSubmit={submit}>
-        <Field label="Email">
+    <AuthShell title="Log in">
+      <form onSubmit={submit} noValidate>
+        <Field label="Email" error={submitted ? emailError : undefined}>
           <input
             className={inputClass}
             type="email"
+            autoComplete="username"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            required
           />
         </Field>
-        <Field label="Password">
+        <Field label="Password" error={submitted ? passwordError : undefined}>
           <input
             className={inputClass}
             type="password"
+            autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            required
           />
         </Field>
-        <ErrorText error={mutation.error} />
+        <ErrorBox error={mutation.error} />
         <button
-          className={buttonClass}
+          className={`${buttonClass} w-full`}
           type="submit"
           disabled={mutation.isPending}
         >
-          Log in
+          {mutation.isPending ? 'Logging in...' : 'Log in'}
         </button>
-        <p className="mt-4 text-sm text-slate-500">
+        <p className="mt-4 text-center text-sm text-slate-500">
           New here?{' '}
           <Link className="text-blue-600 hover:underline" to="/register">
-            Create a company
+            Register your company
           </Link>
         </p>
       </form>
-    </Card>
+    </AuthShell>
   );
 }

@@ -4,104 +4,187 @@ import type { FormEvent } from 'react';
 import { api } from '../api';
 import type { Stock as StockRow } from '../api';
 import { useAuth } from '../auth';
-import { Card, ErrorText, Field, buttonClass, inputClass } from '../ui';
+import { useToast } from '../toast';
+import {
+  Card,
+  EmptyState,
+  ErrorBox,
+  Field,
+  PageHeader,
+  Pager,
+  SkeletonRows,
+  buttonClass,
+  inputClass,
+  secondaryButtonClass,
+} from '../ui';
+
+const LIMIT = 10;
+
+function QuantityLabel({ quantity }: { quantity: number }) {
+  if (quantity === 0) {
+    return <span className="font-medium text-red-600">Out of stock</span>;
+  }
+  if (quantity <= 5) {
+    return <span className="font-medium text-amber-600">{quantity} (low)</span>;
+  }
+  return <span>{quantity}</span>;
+}
 
 export function Stock() {
   const { role } = useAuth();
   const queryClient = useQueryClient();
-
-  const [lookup, setLookup] = useState('');
-  const [searched, setSearched] = useState('');
-  const found = useQuery({
-    queryKey: ['stock', searched],
-    queryFn: () =>
-      api<StockRow>('inventory', `/stock/${encodeURIComponent(searched)}`),
-    enabled: searched !== '',
-  });
-
+  const notify = useToast();
+  const [page, setPage] = useState(1);
   const [product, setProduct] = useState('');
-  const [quantity, setQuantity] = useState(0);
+  const [quantity, setQuantity] = useState('0');
+  const [submitted, setSubmitted] = useState(false);
+
+  const { data, isPending, error, refetch } = useQuery({
+    queryKey: ['stock', page],
+    queryFn: () =>
+      api<StockRow[]>('inventory', `/stock?page=${page}&limit=${LIMIT}`),
+  });
+  const rows = data ?? [];
+
   const save = useMutation({
     mutationFn: () =>
       api('inventory', '/stock', {
         method: 'PUT',
-        body: { product, quantity },
+        body: { product: product.trim(), quantity: Number(quantity) },
       }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['stock'] }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['stock'] });
+      notify(`Stock for "${product.trim()}" is now ${Number(quantity)}.`);
+      setProduct('');
+      setQuantity('0');
+      setSubmitted(false);
+    },
   });
 
-  function search(event: FormEvent) {
-    event.preventDefault();
-    setSearched(lookup);
-  }
+  const amount = Number(quantity);
+  const errors = {
+    product: product.trim() ? undefined : 'Enter the product name.',
+    quantity:
+      Number.isInteger(amount) && amount >= 0
+        ? undefined
+        : 'Quantity must be a whole number, 0 or more.',
+  };
 
-  function submitSave(event: FormEvent) {
+  function submit(event: FormEvent) {
     event.preventDefault();
-    save.mutate();
+    setSubmitted(true);
+    if (!errors.product && !errors.quantity) {
+      save.mutate();
+    }
   }
 
   return (
     <>
-      <Card title="Check stock" narrow>
-        <form onSubmit={search}>
-          <Field label="Product">
-            <input
-              className={inputClass}
-              value={lookup}
-              onChange={(e) => setLookup(e.target.value)}
-              required
-            />
-          </Field>
-          <button className={buttonClass} type="submit">
-            Check
-          </button>
-        </form>
-        {found.data && (
-          <p className="mt-3 text-sm">
-            {found.data.product}: <strong>{found.data.quantity}</strong> in
-            stock
-          </p>
-        )}
-        <div className="mt-3">
-          <ErrorText error={found.error} />
-        </div>
-      </Card>
+      <PageHeader
+        title="Stock"
+        subtitle={
+          role === 'admin'
+            ? 'Set or change the quantity of a product.'
+            : 'Products and quantities in stock.'
+        }
+      />
 
       {role === 'admin' && (
         <Card title="Set stock" narrow>
-          <form onSubmit={submitSave}>
-            <Field label="Product">
+          <form onSubmit={submit} noValidate>
+            <Field
+              label="Product"
+              error={submitted ? errors.product : undefined}
+            >
               <input
                 className={inputClass}
                 value={product}
                 onChange={(e) => setProduct(e.target.value)}
-                required
               />
             </Field>
-            <Field label="Quantity">
+            <Field
+              label="Quantity"
+              error={submitted ? errors.quantity : undefined}
+            >
               <input
                 className={inputClass}
                 type="number"
-                min={0}
                 value={quantity}
-                onChange={(e) => setQuantity(Number(e.target.value))}
-                required
+                onChange={(e) => setQuantity(e.target.value)}
               />
             </Field>
-            <ErrorText error={save.error} />
+            <ErrorBox error={save.error} />
             <button
               className={buttonClass}
               type="submit"
               disabled={save.isPending}
             >
-              Save
+              {save.isPending ? 'Saving...' : 'Save stock'}
             </button>
-            {save.isSuccess && (
-              <p className="mt-3 text-sm text-green-700">Saved.</p>
-            )}
           </form>
         </Card>
       )}
+
+      <Card title="Products">
+        <ErrorBox error={error} onRetry={() => void refetch()} />
+        {isPending && !error && <SkeletonRows />}
+        {data && rows.length === 0 && (
+          <EmptyState
+            title={page === 1 ? 'No products yet' : 'No more products'}
+            text={
+              page === 1
+                ? role === 'admin'
+                  ? 'Add a product above to start taking orders.'
+                  : 'An admin needs to add products first.'
+                : undefined
+            }
+          />
+        )}
+        {rows.length > 0 && (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[20rem] text-left text-sm">
+              <thead>
+                <tr className="border-b border-slate-200 text-slate-500">
+                  <th className="p-2 font-medium">Product</th>
+                  <th className="p-2 font-medium">Quantity</th>
+                  {role === 'admin' && <th className="p-2" />}
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row) => (
+                  <tr key={row.product} className="border-b border-slate-100">
+                    <td className="p-2">{row.product}</td>
+                    <td className="p-2">
+                      <QuantityLabel quantity={row.quantity} />
+                    </td>
+                    {role === 'admin' && (
+                      <td className="p-2 text-right">
+                        <button
+                          className={secondaryButtonClass}
+                          onClick={() => {
+                            setProduct(row.product);
+                            setQuantity(String(row.quantity));
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                          }}
+                        >
+                          Edit
+                        </button>
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        {(page > 1 || rows.length > 0) && (
+          <Pager
+            page={page}
+            hasNext={rows.length === LIMIT}
+            onChange={setPage}
+          />
+        )}
+      </Card>
     </>
   );
 }

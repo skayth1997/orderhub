@@ -1,10 +1,9 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
+import type { Role } from './api';
 
 const TOKEN_KEY = 'orderhub_token';
 export const UNAUTHORIZED_EVENT = 'orderhub:unauthorized';
-
-export type Role = 'admin' | 'manager' | 'viewer';
 
 interface TokenData {
   role: Role;
