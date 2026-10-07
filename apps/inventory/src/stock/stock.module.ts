@@ -2,16 +2,19 @@ import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { Redis } from 'ioredis';
 import { AuthModule } from '../auth/auth.module.js';
 import { KAFKA_CLIENT } from '../events/events.js';
 import { OrderEventsController } from './order-events.controller.js';
+import { ProcessedEvent } from './processed-event.entity.js';
+import { REDIS_CLIENT } from './redis.js';
 import { Stock } from './stock.entity.js';
 import { StockController } from './stock.controller.js';
 import { StockService } from './stock.service.js';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Stock]),
+    TypeOrmModule.forFeature([Stock, ProcessedEvent]),
     AuthModule,
 
     ClientsModule.registerAsync([
@@ -32,6 +35,17 @@ import { StockService } from './stock.service.js';
     ]),
   ],
   controllers: [StockController, OrderEventsController],
-  providers: [StockService],
+  providers: [
+    StockService,
+    {
+      provide: REDIS_CLIENT,
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) =>
+        new Redis({
+          host: config.get('REDIS_HOST', 'localhost'),
+          port: Number(config.get('REDIS_PORT', 6379)),
+        }),
+    },
+  ],
 })
 export class StockModule {}

@@ -1,4 +1,4 @@
-import { Body, Controller, Put, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Put, Req, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '../auth/auth.guard.js';
 import type { AuthenticatedRequest } from '../auth/auth.guard.js';
 import { Roles } from '../auth/roles.decorator.js';
@@ -12,6 +12,14 @@ import { StockService } from './stock.service.js';
 @UseGuards(AuthGuard, RolesGuard)
 export class StockController {
   constructor(private readonly stockService: StockService) {}
+
+  @Get(':product')
+  get(
+    @Param('product') product: string,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<Stock> {
+    return this.stockService.get(req.user.tenantId, product);
+  }
 
   @Put()
   @Roles(UserRole.Admin)

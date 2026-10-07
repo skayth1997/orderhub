@@ -4,6 +4,8 @@ export const ORDERS_EVENTS_TOPIC = 'orders.events';
 
 export const STOCK_EVENTS_TOPIC = 'stock.events';
 
+export const ORDERS_DLQ_TOPIC = 'orders.events.dlq';
+
 export interface OrderCreatedEvent {
   eventId: string;
   type: 'order.created';
