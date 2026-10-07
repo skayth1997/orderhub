@@ -71,6 +71,10 @@ export class AuthService {
       throw new UnauthorizedException('Invalid email or password');
     }
 
+    return this.createToken(user);
+  }
+
+  async createToken(user: User): Promise<{ accessToken: string }> {
     const accessToken = await this.jwtService.signAsync({
       sub: user.id,
       tenantId: user.tenantId,
