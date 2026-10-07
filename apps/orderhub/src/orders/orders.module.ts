@@ -5,13 +5,15 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from '../auth/auth.module.js';
 import { KAFKA_CLIENT } from './events/order-created.event.js';
 import { Order } from './order.entity.js';
+import { OutboxEvent } from './outbox/outbox-event.entity.js';
+import { OutboxPublisher } from './outbox/outbox.publisher.js';
 import { OrdersController } from './orders.controller.js';
 import { StockEventsController } from './stock-events.controller.js';
 import { OrdersService } from './orders.service.js';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Order]),
+    TypeOrmModule.forFeature([Order, OutboxEvent]),
     AuthModule,
 
     ClientsModule.registerAsync([
@@ -32,6 +34,6 @@ import { OrdersService } from './orders.service.js';
     ]),
   ],
   controllers: [OrdersController, StockEventsController],
-  providers: [OrdersService],
+  providers: [OrdersService, OutboxPublisher],
 })
 export class OrdersModule {}
