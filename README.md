@@ -72,7 +72,15 @@ You need Node 24, pnpm and Docker.
    pnpm install
    ```
 
-   This starts two Postgres databases, Kafka (with the topics), Kafka UI (http://localhost:8080), Redis, MongoDB, RabbitMQ (UI at http://localhost:15672, login from `.env`) and LocalStack.
+   This starts two Postgres databases, Kafka (with the topics), Redis, MongoDB, RabbitMQ and LocalStack, plus these web tools:
+
+   | Tool | Address | Login |
+   |---|---|---|
+   | Kafka UI | http://localhost:8080 | none |
+   | RabbitMQ | http://localhost:15672 | `RABBITMQ_USER` / `RABBITMQ_PASSWORD` from `.env` |
+   | Adminer (PostgreSQL) | http://localhost:8081 | System `PostgreSQL`, server `postgres` (orders) or `inventory-db` (inventory), user, password and database from `.env` |
+   | mongo-express (MongoDB) | http://localhost:8082 | `MONGO_EXPRESS_USER` / `MONGO_EXPRESS_PASSWORD` from `.env` |
+   | RedisInsight (Redis) | http://localhost:5540 | none. Add a database with host `redis`, port `6379` |
 
 2. Start the three apps, each in its own terminal:
 
