@@ -1,124 +1,192 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# OrderHub
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+OrderHub is a small multi-tenant order platform. Many companies (tenants) use the same system, and each company sees only its own data.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+It is a learning project. It is built with NestJS, TypeORM, PostgreSQL, Kafka, Redis, MongoDB, RabbitMQ and SQS (LocalStack), with a small React frontend.
 
-## Description
+## What it does
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+- A company registers and gets an admin user. Admins can add managers and viewers.
+- Users log in with email and password, or with Google. They get a JWT.
+- Admins and managers create orders. Viewers can only read.
+- Every order asks the inventory service for stock. The order becomes `confirmed` or `rejected`.
+- Every stock result creates a notification, and sends an email job (RabbitMQ) and an SMS job (SQS).
+- A tenant can never read another tenant's data.
 
-## Project setup
+## Architecture
 
-```bash
-$ pnpm install
+```mermaid
+flowchart LR
+    Web["web (React)"] -->|REST| Orders
+    Web -->|REST| Inventory
+    Web -->|REST| Notif
+
+    subgraph orders_app["orders app :3000"]
+        Orders["REST + GraphQL<br/>auth, orders"]
+        Outbox["outbox publisher"]
+    end
+    OrdersDB[("Postgres<br/>orders + outbox")]
+    Orders --> OrdersDB
+    Outbox --> OrdersDB
+    Orders -.rate limit.-> Redis[(Redis)]
+
+    subgraph inventory_app["inventory app :3001"]
+        Inventory["stock API<br/>+ order consumer"]
+    end
+    InvDB[("Postgres<br/>stock + processed_events")]
+    Inventory --> InvDB
+    Inventory -.cache.-> Redis
+
+    subgraph notifications_app["notifications app :3002"]
+        Notif["notifications API<br/>+ stock consumer"]
+        Email["email worker"]
+        Sms["SMS worker"]
+    end
+    Mongo[("MongoDB<br/>notifications")]
+    Notif --> Mongo
+
+    Kafka{{"Kafka<br/>orders.events<br/>stock.events<br/>orders.events.dlq"}}
+    Outbox -->|order.created| Kafka
+    Kafka -->|order.created| Inventory
+    Inventory -->|stock.reserved / stock.rejected| Kafka
+    Kafka -->|stock events| Orders
+    Kafka -->|stock events| Notif
+
+    Rabbit{{"RabbitMQ<br/>email.send, retry, DLQ"}}
+    SQS{{"SQS<br/>sms-send + DLQ"}}
+    Notif --> Rabbit --> Email
+    Notif --> SQS --> Sms
 ```
 
-## Compile and run the project
+Each app has its own database (or none). Apps never call each other directly. They only exchange events.
+
+## How to run it
+
+You need Node 24, pnpm and Docker.
+
+1. Copy the settings and start the infrastructure:
+
+   ```bash
+   cp .env.example .env        # then set JWT_SECRET to a long random string
+   docker compose up -d
+   pnpm install
+   ```
+
+   This starts two Postgres databases, Kafka (with the topics), Kafka UI (http://localhost:8080), Redis, MongoDB, RabbitMQ (UI at http://localhost:15672, login from `.env`) and LocalStack.
+
+2. Start the three apps, each in its own terminal:
+
+   ```bash
+   pnpm start:dev:orderhub
+   pnpm start:dev:inventory
+   pnpm start:dev:notifications
+   ```
+
+3. Start the frontend (optional) and open http://localhost:5173:
+
+   ```bash
+   cd web && pnpm install && pnpm dev
+   ```
+
+4. Try it:
+
+   ```bash
+   curl -X POST localhost:3000/auth/register -H 'content-type: application/json' \
+     -d '{"companyName":"Acme","email":"admin@acme.com","password":"secret123"}'
+   curl -X POST localhost:3000/auth/login -H 'content-type: application/json' \
+     -d '{"email":"admin@acme.com","password":"secret123"}'
+   # use the accessToken:
+   curl -X PUT localhost:3001/stock -H "authorization: Bearer $TOKEN" -H 'content-type: application/json' \
+     -d '{"product":"Lamp","quantity":5}'
+   curl -X POST localhost:3000/orders -H "authorization: Bearer $TOKEN" -H 'content-type: application/json' \
+     -d '{"customerName":"Ann","product":"Lamp","quantity":1}'
+   curl localhost:3000/orders -H "authorization: Bearer $TOKEN"
+   curl localhost:3002/notifications -H "authorization: Bearer $TOKEN"
+   ```
+
+   GraphQL is at `POST /graphql` (queries `orders`, `order(id)`, mutation `createOrder`).
+
+### Tests
 
 ```bash
-# development
-$ pnpm run start
-
-# watch mode
-$ pnpm run start:dev
-
-# production mode
-$ pnpm run start:prod
+pnpm test        # unit tests
+pnpm test:e2e    # e2e tests, needs docker compose running (uses the database orderhub_test)
+pnpm lint
 ```
 
-## Run tests
+### Several inventory instances
+
+`orders.events` has 3 partitions, so up to 3 inventory instances can share the work. Build once, then start them with different ports:
 
 ```bash
-# unit tests
-$ pnpm run test
-
-# e2e tests
-$ pnpm run test:e2e
-
-# test coverage
-$ pnpm run test:cov
+pnpm build
+INVENTORY_PORT=3001 node dist/apps/inventory/main.js
+INVENTORY_PORT=3011 node dist/apps/inventory/main.js
+INVENTORY_PORT=3021 node dist/apps/inventory/main.js
 ```
 
-## Deployment
+They all use the group `inventory-service`, so Kafka gives each one one partition.
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+### Load test
 
 ```bash
-$ pnpm install -g @nestjs/mau
-$ mau deploy
+pnpm build && node dist/apps/orderhub/main.js     # set RATE_LIMIT_PER_MINUTE high first
+k6 run load-test/create-orders.js
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+One run on a laptop (20 virtual users, 10 tenants, 1 minute, all services on the same machine): about 775 requests per second, 0% errors, p95 response time 37 ms.
 
-## Observability
+### Log in with Google
 
-In production applications, observability is essential for understanding how your system behaves, detecting issues early, and maintaining reliable performance.
+In Google Cloud Console: create a project, set up the OAuth consent screen, then create an OAuth client ID of type "Web application". Add `http://localhost:3000/auth/google/callback` as an authorized redirect URI. Put the client ID and secret in `.env`. Open `http://localhost:3000/auth/google` in a browser. Only emails that already exist in OrderHub can log in.
 
-[NestJS Observe](https://observe.nestjs.com) automatically instruments your NestJS application, giving you deep visibility into your system with minimal setup:
+## The event flow
 
-- **Distributed tracing:** Follow requests across services and understand how they flow through your system.
-- **Waterfall analysis:** Visualize request execution and identify slow operations, bottlenecks, and unexpected delays.
-- **Performance analysis:** Analyze application performance in real time and quickly pinpoint areas that need optimization.
-- **Metrics:** Track key application and infrastructure metrics to understand system health and performance trends.
-- **Logging:** Centralize and correlate logs with traces and other telemetry to make debugging easier.
-- **Error tracking:** Detect errors quickly and investigate their root causes with the surrounding context.
-- **SLA monitoring:** Track service-level objectives and identify when your application is approaching or exceeding defined thresholds.
-- **Alarms and alerts:** Set up alerts for critical errors, performance degradation, SLA violations, and other anomalies so your team can react quickly.
+1. `POST /orders` saves the order and an `order.created` row in the `outbox_events` table, in one transaction.
+2. The outbox publisher reads unsent rows and publishes them to Kafka (`orders.events`, key = order id), then marks them sent.
+3. The inventory app consumes `order.created`. In one transaction it saves the event id in `processed_events` (a duplicate is skipped) and reduces the stock if there is enough.
+4. It publishes `stock.reserved` or `stock.rejected` to `stock.events`.
+5. The orders app consumes it and sets the order to `confirmed` or `rejected`.
+6. The notifications app consumes it (its own consumer group), saves a notification in MongoDB (unique `eventId`, so duplicates are skipped), then sends an email job to RabbitMQ and an SMS job to SQS.
+7. If inventory fails, it retries after 1 s, 5 s and 15 s. Then it sends the event to `orders.events.dlq` and continues. RabbitMQ retries 3 times and then dead-letters. SQS gives up after 3 receives and moves the message to its DLQ.
 
-To add it to this project:
+To test the failure paths, create orders for the products `BROKEN` (inventory fails), `BROKEN-EMAIL` (email fails) and `BROKEN-SMS` (SMS fails). These products have no stock, so the notification step is the one that fails for the last two.
 
-```bash
-$ pnpm install @nestjs/observe
-```
+## Main design decisions
 
-Then follow the [setup guide](https://docs.nestjs.com/observability/overview) - it takes a single import and an app key.
+- **Separate services and databases.** One service cannot break another's data, and each can be scaled alone.
+- **Events instead of direct calls.** If inventory is down, orders still work and catch up later.
+- **Tenant id only from the JWT.** It is never read from the request body, and every query filters by it. Another tenant's order returns 404.
+- **Outbox pattern.** The order and its event are saved together, so an event cannot be lost between "saved" and "sent".
+- **Idempotent consumers.** Kafka can deliver twice. Inventory and notifications both remember event ids. In inventory the note is saved in the same transaction as the stock change.
+- **Atomic stock update.** One conditional `UPDATE ... WHERE quantity >= amount`, so two orders cannot take the same item.
+- **Different tools for different jobs.** Kafka for the event log, RabbitMQ for email jobs with manual acks, SQS for SMS jobs with a visibility timeout, Redis for cache and rate limit, MongoDB for notification documents.
+- **Cache invalidation.** The stock cache is deleted when the stock changes, after the transaction commits.
+- **Guards shared by REST and GraphQL.** One `AuthGuard`, `RolesGuard` and rate-limit guard.
+- **All settings in `.env`.** The apps fail at startup if a setting is missing.
 
-The free plan needs no payment details and covers 300,000 events a month. You can also browse the [live demo](https://www.observe-demo.nestjs.com/dashboard) first - the whole dashboard over a busy service's data, with nothing to install.
+## Not ready for production
 
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Auto-instrument your application with [NestJS Observe](https://observe.nestjs.com). Distributed tracing, metrics, and logging made easy. Error tracking and performance monitoring for your NestJS applications.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+- **Secrets and config:** `.env` is a plain file. Use a secret manager. The default database passwords in `.env.example` are weak.
+- **Database schema:** `synchronize: true` creates tables automatically outside production. There are no migrations.
+- **Docker:** single-node Kafka, Postgres, Redis and MongoDB without replicas, backups or authentication (Redis, MongoDB). The apps themselves have no Dockerfiles.
+- **Security:**
+  - No HTTPS, no helmet, no CORS setup (the frontend uses the Vite dev proxy).
+  - JWTs last one hour, cannot be revoked, and the role lives in the token.
+  - The web app stores the token in `localStorage`.
+  - The Google state cookie is not `secure`, and there is no verification of the ID token (the profile is read from Google's userinfo endpoint).
+  - GraphQL has no depth or complexity limits, and the Apollo landing page is on.
+  - No password rules or lockout, and no email confirmation at registration.
+- **Messaging:**
+  - New consumer groups start at the latest offset, so a new notifications group misses older events.
+  - A notification and its email or SMS job are not one transaction. The notification is saved first, so a crash can lose the job (the outbox pattern is only used in the orders app).
+  - Inventory retries by sleeping inside the consumer, which blocks that partition for up to about 21 seconds.
+  - A message in the Kafka DLQ has no tool to inspect and replay it.
+  - Email and SMS go to a tenant id and only write a log line. There is no real provider and no address or phone number.
+  - Rejection reasons are not stored on the order.
+- **Data:** product names must match exactly. Old processed events and sent outbox rows are never deleted. Lists are paged but return no total count. Offset pagination gets slow on very large tables.
+- **Rate limiting:** only the orders app has it, with a fixed window, and it lets requests through if Redis is down.
+- **Observability:** logs only. No metrics, tracing, health checks or alerts.
+- **Tests:** only 1 unit test and 6 e2e tests (orders security). The inventory, notifications, outbox, GraphQL, Google login and the workers have no automated tests. The e2e tests need Docker services running.
+- **Load test:** one local run with everything on one machine. It is not a capacity number.
+- **Cleanup left:** the default Hello World endpoint and its tests are still in the orders app.
