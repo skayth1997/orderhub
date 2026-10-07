@@ -4,9 +4,10 @@ import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import { useAuth } from '../auth';
 
-export function Login() {
+export function Register() {
   const { token, login } = useAuth();
   const navigate = useNavigate();
+  const [companyName, setCompanyName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -19,13 +20,14 @@ export function Login() {
     event.preventDefault();
     setError('');
     try {
+      await api('orderhub', '/auth/register', {
+        method: 'POST',
+        body: { companyName, email, password },
+      });
       const result = await api<{ accessToken: string }>(
         'orderhub',
         '/auth/login',
-        {
-          method: 'POST',
-          body: { email, password },
-        },
+        { method: 'POST', body: { email, password } },
       );
       login(result.accessToken);
       navigate('/orders');
@@ -36,7 +38,15 @@ export function Login() {
 
   return (
     <form className="card narrow" onSubmit={submit}>
-      <h1>Log in</h1>
+      <h1>Create your company</h1>
+      <label>
+        Company name
+        <input
+          value={companyName}
+          onChange={(e) => setCompanyName(e.target.value)}
+          required
+        />
+      </label>
       <label>
         Email
         <input
@@ -56,9 +66,9 @@ export function Login() {
         />
       </label>
       {error && <p className="error">{error}</p>}
-      <button type="submit">Log in</button>
+      <button type="submit">Register</button>
       <p className="muted">
-        New here? <Link to="/register">Create a company</Link>
+        Already have an account? <Link to="/login">Log in</Link>
       </p>
     </form>
   );

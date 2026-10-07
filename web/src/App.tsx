@@ -4,6 +4,7 @@ import { useAuth } from './auth';
 import { Login } from './pages/Login';
 import { NewOrder } from './pages/NewOrder';
 import { Notifications } from './pages/Notifications';
+import { Register } from './pages/Register';
 import { Orders } from './pages/Orders';
 import { Stock } from './pages/Stock';
 
@@ -32,6 +33,7 @@ export function App() {
       <main>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
           <Route
             path="/orders"
             element={
