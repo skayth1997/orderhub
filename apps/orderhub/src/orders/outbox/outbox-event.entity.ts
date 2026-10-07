@@ -19,7 +19,7 @@ export class OutboxEvent {
   @Column('jsonb')
   payload: object;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
 
   @Column('timestamptz', { nullable: true })

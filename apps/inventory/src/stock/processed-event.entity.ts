@@ -5,6 +5,6 @@ export class ProcessedEvent {
   @PrimaryColumn('uuid')
   eventId: string;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamptz' })
   processedAt: Date;
 }

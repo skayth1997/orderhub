@@ -35,7 +35,7 @@ export class Order {
   @Field()
   tenantId: string;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamptz' })
   @Field()
   createdAt: Date;
 }
