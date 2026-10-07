@@ -30,6 +30,9 @@
     },
     {
       "path": "./apps/inventory/tsconfig.app.json"
+    },
+    {
+      "path": "./apps/notifications/tsconfig.app.json"
     }
   ]
 }
