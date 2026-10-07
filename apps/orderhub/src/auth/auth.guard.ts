@@ -4,18 +4,28 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
+import { GqlExecutionContext } from '@nestjs/graphql';
 import { JwtService } from '@nestjs/jwt';
 import type { Request } from 'express';
 import type { JwtPayload } from './jwt-payload.js';
 
 export type AuthenticatedRequest = Request & { user: JwtPayload };
 
+export function getRequest(context: ExecutionContext): AuthenticatedRequest {
+  if (context.getType<string>() === 'graphql') {
+    return GqlExecutionContext.create(context).getContext<{
+      req: AuthenticatedRequest;
+    }>().req;
+  }
+  return context.switchToHttp().getRequest<AuthenticatedRequest>();
+}
+
 @Injectable()
 export class AuthGuard implements CanActivate {
   constructor(private readonly jwtService: JwtService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
+    const request = getRequest(context);
 
     const [type, token] = request.headers.authorization?.split(' ') ?? [];
     if (type !== 'Bearer' || !token) {

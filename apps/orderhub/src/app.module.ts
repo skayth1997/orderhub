@@ -1,5 +1,8 @@
 import { Module } from '@nestjs/common';
+import { ApolloDriver } from '@nestjs/apollo';
+import type { ApolloDriverConfig } from '@nestjs/apollo';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { GraphQLModule } from '@nestjs/graphql';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
@@ -23,6 +26,11 @@ import { UsersModule } from './users/users.module.js';
         autoLoadEntities: true,
         synchronize: config.get('NODE_ENV') !== 'production',
       }),
+    }),
+    GraphQLModule.forRoot<ApolloDriverConfig>({
+      driver: ApolloDriver,
+      autoSchemaFile: true,
+      context: ({ req }: { req: unknown }) => ({ req }),
     }),
     OrdersModule,
     TenantsModule,

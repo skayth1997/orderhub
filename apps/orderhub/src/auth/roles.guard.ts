@@ -5,7 +5,7 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import type { AuthenticatedRequest } from './auth.guard.js';
+import { getRequest } from './auth.guard.js';
 import { ROLES_KEY } from './roles.decorator.js';
 import { UserRole } from '../users/user.entity.js';
 
@@ -23,7 +23,7 @@ export class RolesGuard implements CanActivate {
       return true;
     }
 
-    const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
+    const request = getRequest(context);
     if (!allowedRoles.includes(request.user.role)) {
       throw new ForbiddenException('You do not have permission');
     }

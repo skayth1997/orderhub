@@ -9,6 +9,7 @@ import { OutboxEvent } from './outbox/outbox-event.entity.js';
 import { OutboxPublisher } from './outbox/outbox.publisher.js';
 import { OrdersController } from './orders.controller.js';
 import { StockEventsController } from './stock-events.controller.js';
+import { OrdersResolver } from './orders.resolver.js';
 import { OrdersService } from './orders.service.js';
 
 @Module({
@@ -34,6 +35,6 @@ import { OrdersService } from './orders.service.js';
     ]),
   ],
   controllers: [OrdersController, StockEventsController],
-  providers: [OrdersService, OutboxPublisher],
+  providers: [OrdersService, OrdersResolver, OutboxPublisher],
 })
 export class OrdersModule {}
