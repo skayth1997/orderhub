@@ -7,7 +7,7 @@ import { AuthGuard } from './auth.guard.js';
   imports: [
     JwtModule.registerAsync({
       inject: [ConfigService],
-      // The SAME secret as orderhub, so tokens from orderhub are accepted.
+
       useFactory: (config: ConfigService) => ({
         secret: config.getOrThrow<string>('JWT_SECRET'),
       }),

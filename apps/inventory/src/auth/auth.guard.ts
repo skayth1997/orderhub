@@ -10,7 +10,6 @@ import type { JwtPayload } from './jwt-payload.js';
 
 export type AuthenticatedRequest = Request & { user: JwtPayload };
 
-// Only CHECKS the token. Tokens are created by the orderhub app (login).
 @Injectable()
 export class AuthGuard implements CanActivate {
   constructor(private readonly jwtService: JwtService) {}

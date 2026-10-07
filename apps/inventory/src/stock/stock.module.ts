@@ -13,7 +13,7 @@ import { StockService } from './stock.service.js';
   imports: [
     TypeOrmModule.forFeature([Stock]),
     AuthModule,
-    // The Kafka producer we use to publish stock events.
+
     ClientsModule.registerAsync([
       {
         name: KAFKA_CLIENT,
@@ -21,8 +21,6 @@ import { StockService } from './stock.service.js';
         useFactory: (config: ConfigService) => ({
           transport: Transport.KAFKA,
           options: {
-            // We only SEND messages here. Without this, the client also joins a
-            // consumer group, which slows down start and shutdown.
             producerOnlyMode: true,
             client: {
               clientId: 'inventory-producer',

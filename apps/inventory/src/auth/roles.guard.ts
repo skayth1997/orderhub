@@ -9,7 +9,6 @@ import type { AuthenticatedRequest } from './auth.guard.js';
 import { ROLES_KEY } from './roles.decorator.js';
 import { UserRole } from './user-role.js';
 
-// Must run AFTER AuthGuard, because it reads request.user.
 @Injectable()
 export class RolesGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}

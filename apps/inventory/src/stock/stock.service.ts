@@ -17,14 +17,12 @@ export class StockService {
     private readonly stock: Repository<Stock>,
   ) {}
 
-  // Creates the row, or updates it if this tenant already has this product.
   async set(dto: SetStockDto, tenantId: string): Promise<Stock> {
     const row = { tenantId, product: dto.product, quantity: dto.quantity };
     await this.stock.upsert(row, ['tenantId', 'product']);
     return row;
   }
 
-  // Takes the ordered quantity out of stock, if there is enough.
   async reserve(
     order: OrderCreatedEvent,
   ): Promise<StockReservedEvent | StockRejectedEvent> {
@@ -37,9 +35,6 @@ export class StockService {
       occurredAt: new Date().toISOString(),
     };
 
-    // One single UPDATE: it only changes the row if quantity is high enough.
-    // Doing the check and the change together means two orders at the same
-    // time can never take the same items twice.
     const result = await this.stock
       .createQueryBuilder()
       .update(Stock)
@@ -58,7 +53,6 @@ export class StockService {
       return { ...base, type: 'stock.reserved' };
     }
 
-    // Nothing was changed. Find out why, to give a clear reason.
     const row = await this.stock.findOneBy({
       tenantId: order.tenantId,
       product: order.product,

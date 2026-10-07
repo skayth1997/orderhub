@@ -9,7 +9,6 @@ async function bootstrap() {
   const app = await NestFactory.create(InventoryModule);
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
 
-  // Besides HTTP, this app also listens to Kafka (the Kafka consumer).
   const brokers = app
     .get(ConfigService)
     .get<string>('KAFKA_BROKERS', 'localhost:9092')
@@ -18,7 +17,7 @@ async function bootstrap() {
     transport: Transport.KAFKA,
     options: {
       client: { clientId: 'inventory-consumer', brokers },
-      // Consumers with the same groupId share the work of a topic.
+
       consumer: { groupId: 'inventory-service' },
     },
   });
