@@ -6,6 +6,7 @@ import { AuthModule } from '../auth/auth.module.js';
 import { KAFKA_CLIENT } from './events/order-created.event.js';
 import { Order } from './order.entity.js';
 import { OrdersController } from './orders.controller.js';
+import { StockEventsController } from './stock-events.controller.js';
 import { OrdersService } from './orders.service.js';
 
 @Module({
@@ -29,7 +30,7 @@ import { OrdersService } from './orders.service.js';
       },
     ]),
   ],
-  controllers: [OrdersController],
+  controllers: [OrdersController, StockEventsController],
   providers: [OrdersService],
 })
 export class OrdersModule {}

@@ -52,6 +52,21 @@ services:
     volumes:
       - kafkadata:/var/lib/kafka/data
 
+  # Runs once, creates the topics our apps use, then stops. Creating them here
+  # means the apps never start before their topics exist.
+  kafka-init:
+    image: apache/kafka:3.9.0
+    depends_on:
+      - kafka
+    restart: "no"
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        until /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:19092 --list; do sleep 2; done
+        for topic in orders.events stock.events; do
+          /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:19092 --create --if-not-exists --topic $$topic --partitions 3 --replication-factor 1
+        done
+
   kafka-ui:
     image: ghcr.io/kafbat/kafka-ui:latest
     depends_on:

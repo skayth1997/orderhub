@@ -49,6 +49,22 @@ export class OrdersService {
     return order;
   }
 
+  // Only a "pending" order can change status, so a late or repeated event
+  // can never overwrite an order that is already confirmed or rejected.
+  async updateStatus(
+    orderId: string,
+    tenantId: string,
+    status: 'confirmed' | 'rejected',
+  ): Promise<void> {
+    const result = await this.orders.update(
+      { id: orderId, tenantId, status: 'pending' },
+      { status },
+    );
+    if (result.affected) {
+      this.logger.log(`Order ${orderId} is now ${status}`);
+    }
+  }
+
   private async publishOrderCreated(order: Order): Promise<void> {
     const event: OrderCreatedEvent = {
       eventId: randomUUID(),
