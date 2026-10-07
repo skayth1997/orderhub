@@ -22,6 +22,24 @@ services:
     volumes:
       - inventorydata:/var/lib/postgresql/data
 
+  mongo:
+    image: mongo:7
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodata:/data/db
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+
   kafka:
     image: apache/kafka:3.9.0
     environment:
@@ -63,7 +81,7 @@ services:
     command:
       - |
         until /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:19092 --list; do sleep 2; done
-        for topic in orders.events stock.events; do
+        for topic in orders.events orders.events.dlq stock.events; do
           /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:19092 --create --if-not-exists --topic $$topic --partitions 3 --replication-factor 1
         done
 
@@ -81,3 +99,4 @@ volumes:
   pgdata:
   inventorydata:
   kafkadata:
+  mongodata:
