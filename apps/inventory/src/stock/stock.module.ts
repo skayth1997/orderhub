@@ -21,6 +21,9 @@ import { StockService } from './stock.service.js';
         useFactory: (config: ConfigService) => ({
           transport: Transport.KAFKA,
           options: {
+            // We only SEND messages here. Without this, the client also joins a
+            // consumer group, which slows down start and shutdown.
+            producerOnlyMode: true,
             client: {
               clientId: 'inventory-producer',
               brokers: config.get('KAFKA_BROKERS', 'localhost:9092').split(','),
