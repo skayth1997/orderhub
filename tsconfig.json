@@ -27,6 +27,9 @@
   "references": [
     {
       "path": "./apps/orderhub/tsconfig.app.json"
+    },
+    {
+      "path": "./apps/inventory/tsconfig.app.json"
     }
   ]
 }

@@ -10,6 +10,15 @@
   "monorepo": true,
   "root": "apps/orderhub",
   "projects": {
+    "inventory": {
+      "type": "application",
+      "root": "apps/inventory",
+      "entryFile": "main",
+      "sourceRoot": "apps/inventory/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/inventory/tsconfig.app.json"
+      }
+    },
     "orderhub": {
       "type": "application",
       "root": "apps/orderhub",

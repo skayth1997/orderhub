@@ -7,7 +7,7 @@
   "license": "UNLICENSED",
   "type": "module",
   "scripts": {
-    "build": "nest build orderhub",
+    "build": "nest build orderhub && nest build inventory",
     "deploy": "nest deploy",
     "format": "prettier --write \"apps/**/*.ts\" \"libs/**/*.ts\"",
     "start": "nest start orderhub",
@@ -19,8 +19,10 @@
     "test:debug": "vitest --inspect-brk --no-file-parallelism",
     "test:e2e": "vitest run --config ./vitest.config.e2e.ts",
     "start:dev:orderhub": "nest start orderhub --watch",
+    "start:dev:inventory": "nest start inventory --watch",
     "start:debug": "nest start orderhub --debug --watch",
-    "start:prod:orderhub": "node dist/apps/orderhub/main"
+    "start:prod:orderhub": "node dist/apps/orderhub/main",
+    "start:prod:inventory": "node dist/apps/inventory/main"
   },
   "dependencies": {
     "@nestjs/common": "^12.0.1",
