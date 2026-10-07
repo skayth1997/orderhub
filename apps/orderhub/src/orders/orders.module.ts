@@ -29,7 +29,7 @@ import { OrdersService } from './orders.service.js';
             producerOnlyMode: true,
             client: {
               clientId: 'orderhub',
-              brokers: config.get('KAFKA_BROKERS', 'localhost:9092').split(','),
+              brokers: config.getOrThrow<string>('KAFKA_BROKERS').split(','),
             },
           },
         }),

@@ -11,8 +11,8 @@ import { TenantRateLimitGuard } from './tenant-rate-limit.guard.js';
       inject: [ConfigService],
       useFactory: (config: ConfigService) =>
         new Redis({
-          host: config.get('REDIS_HOST', 'localhost'),
-          port: Number(config.get('REDIS_PORT', 6379)),
+          host: config.getOrThrow('REDIS_HOST'),
+          port: Number(config.getOrThrow('REDIS_PORT')),
         }),
     },
     TenantRateLimitGuard,

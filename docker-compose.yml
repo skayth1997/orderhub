@@ -2,11 +2,11 @@ services:
   postgres:
     image: postgres:16
     environment:
-      POSTGRES_USER: orderhub
-      POSTGRES_PASSWORD: orderhub
-      POSTGRES_DB: orderhub
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
     ports:
-      - "54320:5432"
+      - "${DB_PORT}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
 
@@ -14,25 +14,28 @@ services:
   inventory-db:
     image: postgres:16
     environment:
-      POSTGRES_USER: inventory
-      POSTGRES_PASSWORD: inventory
-      POSTGRES_DB: inventory
+      POSTGRES_USER: ${INVENTORY_DB_USER}
+      POSTGRES_PASSWORD: ${INVENTORY_DB_PASSWORD}
+      POSTGRES_DB: ${INVENTORY_DB_NAME}
     ports:
-      - "54321:5432"
+      - "${INVENTORY_DB_PORT}:5432"
     volumes:
       - inventorydata:/var/lib/postgresql/data
 
   mongo:
     image: mongo:7
     ports:
-      - "27017:27017"
+      - "${MONGO_PORT}:27017"
     volumes:
       - mongodata:/data/db
 
   rabbitmq:
     image: rabbitmq:3-management
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
     ports:
-      - "5672:5672"
+      - "${RABBITMQ_PORT}:5672"
       - "15672:15672"
 
   localstack:
@@ -40,12 +43,12 @@ services:
     environment:
       SERVICES: sqs
     ports:
-      - "4566:4566"
+      - "${LOCALSTACK_PORT}:4566"
 
   redis:
     image: redis:7
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT}:6379"
 
   kafka:
     image: apache/kafka:3.9.0

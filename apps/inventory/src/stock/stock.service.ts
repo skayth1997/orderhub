@@ -1,4 +1,5 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Redis } from 'ioredis';
 import { randomUUID } from 'node:crypto';
@@ -13,8 +14,6 @@ import { ProcessedEvent } from './processed-event.entity.js';
 import { REDIS_CLIENT } from './redis.js';
 import { Stock } from './stock.entity.js';
 
-const CACHE_SECONDS = 30;
-
 @Injectable()
 export class StockService {
   constructor(
@@ -23,6 +22,7 @@ export class StockService {
     private readonly dataSource: DataSource,
     @Inject(REDIS_CLIENT)
     private readonly redis: Redis,
+    private readonly config: ConfigService,
   ) {}
 
   private cacheKey(tenantId: string, product: string): string {
@@ -42,7 +42,12 @@ export class StockService {
       throw new NotFoundException(`No stock for product "${product}"`);
     }
 
-    await this.redis.set(key, JSON.stringify(row), 'EX', CACHE_SECONDS);
+    await this.redis.set(
+      key,
+      JSON.stringify(row),
+      'EX',
+      Number(this.config.getOrThrow('STOCK_CACHE_SECONDS')),
+    );
     return row;
   }
 

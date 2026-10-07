@@ -26,8 +26,8 @@ export class SqsService implements OnModuleInit {
 
   constructor(config: ConfigService) {
     this.client = new SQSClient({
-      region: config.get('AWS_REGION', 'us-east-1'),
-      endpoint: config.get('SQS_ENDPOINT', 'http://localhost:4566'),
+      region: config.getOrThrow('AWS_REGION'),
+      endpoint: config.getOrThrow('SQS_ENDPOINT'),
     });
   }
 

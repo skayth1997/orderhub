@@ -27,7 +27,7 @@ import { StockService } from './stock.service.js';
             producerOnlyMode: true,
             client: {
               clientId: 'inventory-producer',
-              brokers: config.get('KAFKA_BROKERS', 'localhost:9092').split(','),
+              brokers: config.getOrThrow<string>('KAFKA_BROKERS').split(','),
             },
           },
         }),
@@ -42,8 +42,8 @@ import { StockService } from './stock.service.js';
       inject: [ConfigService],
       useFactory: (config: ConfigService) =>
         new Redis({
-          host: config.get('REDIS_HOST', 'localhost'),
-          port: Number(config.get('REDIS_PORT', 6379)),
+          host: config.getOrThrow('REDIS_HOST'),
+          port: Number(config.getOrThrow('REDIS_PORT')),
         }),
     },
   ],

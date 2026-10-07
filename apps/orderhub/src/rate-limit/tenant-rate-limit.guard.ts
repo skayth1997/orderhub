@@ -24,7 +24,7 @@ export class TenantRateLimitGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const { tenantId } = getRequest(context).user;
-    const limit = Number(this.config.get('RATE_LIMIT_PER_MINUTE', 300));
+    const limit = Number(this.config.getOrThrow('RATE_LIMIT_PER_MINUTE'));
     const minute = Math.floor(Date.now() / 60000);
     const key = `ratelimit:${tenantId}:${minute}`;
 

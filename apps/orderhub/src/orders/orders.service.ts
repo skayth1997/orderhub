@@ -21,7 +21,12 @@ export class OrdersService {
   async create(dto: CreateOrderDto, tenantId: string): Promise<Order> {
     return this.dataSource.transaction(async (manager) => {
       const order = await manager.save(
-        this.orders.create({ ...dto, tenantId }),
+        this.orders.create({
+          customerName: dto.customerName,
+          product: dto.product,
+          quantity: dto.quantity,
+          tenantId,
+        }),
       );
 
       const event: OrderCreatedEvent = {

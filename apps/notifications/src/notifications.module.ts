@@ -9,7 +9,7 @@ import { NotificationsModule } from './notifications/notifications.module.js';
     MongooseModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
-        uri: config.get('MONGO_URL', 'mongodb://localhost:27017/notifications'),
+        uri: config.getOrThrow('MONGO_URL'),
       }),
     }),
     NotificationsModule,

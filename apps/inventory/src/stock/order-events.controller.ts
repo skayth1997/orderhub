@@ -1,4 +1,5 @@
 import { Controller, Inject, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import type { ClientKafka } from '@nestjs/microservices';
 import { EventPattern, Payload } from '@nestjs/microservices';
 import { setTimeout as sleep } from 'node:timers/promises';
@@ -12,18 +13,24 @@ import {
 import type { OrderCreatedEvent } from '../events/events.js';
 import { StockService } from './stock.service.js';
 
-const RETRY_DELAYS_MS = [1000, 5000, 15000];
-const MAX_ATTEMPTS = RETRY_DELAYS_MS.length + 1;
-
 @Controller()
 export class OrderEventsController {
   private readonly logger = new Logger(OrderEventsController.name);
+  private readonly retryDelaysMs: number[];
+  private readonly maxAttempts: number;
 
   constructor(
     private readonly stockService: StockService,
     @Inject(KAFKA_CLIENT)
     private readonly kafka: ClientKafka,
-  ) {}
+    config: ConfigService,
+  ) {
+    this.retryDelaysMs = config
+      .getOrThrow<string>('INVENTORY_RETRY_DELAYS_MS')
+      .split(',')
+      .map(Number);
+    this.maxAttempts = this.retryDelaysMs.length + 1;
+  }
 
   @EventPattern(ORDERS_EVENTS_TOPIC)
   async onOrderEvent(@Payload() event: OrderCreatedEvent): Promise<void> {
@@ -32,9 +39,9 @@ export class OrderEventsController {
     }
 
     let lastError: unknown;
-    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    for (let attempt = 1; attempt <= this.maxAttempts; attempt++) {
       this.logger.log(
-        `Attempt ${attempt}/${MAX_ATTEMPTS} for order ${event.orderId}`,
+        `Attempt ${attempt}/${this.maxAttempts} for order ${event.orderId}`,
       );
       try {
         const result = await this.stockService.reserve(event);
@@ -48,10 +55,10 @@ export class OrderEventsController {
       } catch (error) {
         lastError = error;
         this.logger.warn(
-          `Attempt ${attempt}/${MAX_ATTEMPTS} failed for order ${event.orderId}: ${errorMessage(error)}`,
+          `Attempt ${attempt}/${this.maxAttempts} failed for order ${event.orderId}: ${errorMessage(error)}`,
         );
-        if (attempt < MAX_ATTEMPTS) {
-          const delay = RETRY_DELAYS_MS[attempt - 1];
+        if (attempt < this.maxAttempts) {
+          const delay = this.retryDelaysMs[attempt - 1];
           this.logger.log(`Retrying in ${delay / 1000}s`);
           await sleep(delay);
         }
@@ -64,7 +71,7 @@ export class OrderEventsController {
     await this.publish(ORDERS_DLQ_TOPIC, event.orderId, {
       error: errorMessage(lastError),
       originalTopic: ORDERS_EVENTS_TOPIC,
-      attempts: MAX_ATTEMPTS,
+      attempts: this.maxAttempts,
       event,
     });
   }

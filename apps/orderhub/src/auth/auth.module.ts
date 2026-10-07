@@ -12,7 +12,7 @@ import { GoogleAuthService } from './google-auth.service.js';
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
         secret: config.getOrThrow<string>('JWT_SECRET'),
-        signOptions: { expiresIn: '1h' },
+        signOptions: { expiresIn: config.getOrThrow('JWT_EXPIRES_IN') },
       }),
     }),
   ],

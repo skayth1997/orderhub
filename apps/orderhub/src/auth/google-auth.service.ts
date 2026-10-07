@@ -23,10 +23,7 @@ export class GoogleAuthService {
   ) {}
 
   private get redirectUri(): string {
-    return this.config.get(
-      'GOOGLE_REDIRECT_URI',
-      'http://localhost:3000/auth/google/callback',
-    );
+    return this.config.getOrThrow('GOOGLE_REDIRECT_URI');
   }
 
   buildLoginUrl(state: string): string {

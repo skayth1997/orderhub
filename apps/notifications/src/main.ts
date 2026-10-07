@@ -11,7 +11,7 @@ async function bootstrap() {
 
   const brokers = app
     .get(ConfigService)
-    .get<string>('KAFKA_BROKERS', 'localhost:9092')
+    .getOrThrow<string>('KAFKA_BROKERS')
     .split(',');
   app.connectMicroservice<MicroserviceOptions>({
     transport: Transport.KAFKA,
@@ -22,6 +22,6 @@ async function bootstrap() {
   });
 
   await app.startAllMicroservices();
-  await app.listen(process.env.NOTIFICATIONS_PORT ?? 3002);
+  await app.listen(app.get(ConfigService).getOrThrow('NOTIFICATIONS_PORT'));
 }
 await bootstrap();

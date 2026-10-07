@@ -30,9 +30,12 @@ export class RabbitService implements OnModuleInit, OnModuleDestroy {
   constructor(private readonly config: ConfigService) {}
 
   async onModuleInit(): Promise<void> {
-    this.connection = await amqp.connect(
-      this.config.get('RABBITMQ_URL', 'amqp://guest:guest@localhost:5672'),
-    );
+    this.connection = await amqp.connect({
+      hostname: this.config.getOrThrow('RABBITMQ_HOST'),
+      port: Number(this.config.getOrThrow('RABBITMQ_PORT')),
+      username: this.config.getOrThrow('RABBITMQ_USER'),
+      password: this.config.getOrThrow('RABBITMQ_PASSWORD'),
+    });
     this.channel = await this.connection.createChannel();
 
     await this.channel.assertExchange(EMAIL_DLX, 'direct', { durable: true });
