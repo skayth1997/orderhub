@@ -32,7 +32,6 @@ export class AuthService {
 
     const passwordHash = await bcrypt.hash(dto.password, 10);
 
-    // Create the tenant and the user together: if one fails, neither is saved.
     const { tenant, user } = await this.dataSource.transaction(
       async (manager) => {
         const tenant = await manager.save(
@@ -50,7 +49,6 @@ export class AuthService {
       },
     );
 
-    // passwordHash is left out on purpose.
     return {
       tenant: { id: tenant.id, name: tenant.name },
       user: {
@@ -67,8 +65,6 @@ export class AuthService {
       .getRepository(User)
       .findOneBy({ email: dto.email.toLowerCase() });
 
-    // Same message for "no such email" and "wrong password",
-    // so nobody can use login to find out which emails exist.
     const passwordOk =
       user && (await bcrypt.compare(dto.password, user.passwordHash));
     if (!user || !passwordOk) {

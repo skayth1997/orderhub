@@ -10,7 +10,6 @@ import { AuthService } from './auth.service.js';
     JwtModule.registerAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
-        // getOrThrow: the app refuses to start if JWT_SECRET is missing.
         secret: config.getOrThrow<string>('JWT_SECRET'),
         signOptions: { expiresIn: '1h' },
       }),

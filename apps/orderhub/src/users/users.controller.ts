@@ -12,8 +12,6 @@ import { UsersService } from './users.service.js';
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  // The new user always goes into the admin's own tenant (taken from the
-  // token), never from the request body.
   @Post()
   @Roles(UserRole.Admin)
   create(@Body() dto: CreateUserDto, @Req() req: AuthenticatedRequest) {

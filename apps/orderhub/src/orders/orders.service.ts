@@ -12,8 +12,6 @@ import {
 import type { OrderCreatedEvent } from './events/order-created.event.js';
 import { Order } from './order.entity.js';
 
-// Every method receives the tenantId from the JWT and uses it in the query,
-// so one company can never see another company's orders.
 @Injectable()
 export class OrdersService {
   private readonly logger = new Logger(OrdersService.name);
@@ -42,15 +40,13 @@ export class OrdersService {
 
   async findOne(id: string, tenantId: string): Promise<Order> {
     const order = await this.orders.findOneBy({ id, tenantId });
-    // An order from another tenant looks exactly like a missing order.
+
     if (!order) {
       throw new NotFoundException(`Order ${id} not found`);
     }
     return order;
   }
 
-  // Only a "pending" order can change status, so a late or repeated event
-  // can never overwrite an order that is already confirmed or rejected.
   async updateStatus(
     orderId: string,
     tenantId: string,
@@ -77,12 +73,10 @@ export class OrdersService {
     };
 
     try {
-      // The key is the orderId: all events of one order go to the same partition.
       await lastValueFrom(
         this.kafka.emit(ORDERS_EVENTS_TOPIC, { key: order.id, value: event }),
       );
     } catch (error) {
-      // The order is already saved, so we log the problem instead of failing.
       this.logger.error(`Could not publish event for order ${order.id}`, error);
     }
   }

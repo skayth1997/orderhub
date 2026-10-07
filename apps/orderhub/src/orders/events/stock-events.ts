@@ -1,4 +1,3 @@
-// Topic we READ from (published by the inventory app).
 export const STOCK_EVENTS_TOPIC = 'stock.events';
 
 interface StockEventBase {

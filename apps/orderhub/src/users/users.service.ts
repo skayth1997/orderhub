@@ -27,7 +27,6 @@ export class UsersService {
       }),
     );
 
-    // passwordHash is left out on purpose.
     return {
       id: user.id,
       email: user.email,

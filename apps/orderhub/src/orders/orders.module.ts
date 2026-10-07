@@ -13,7 +13,7 @@ import { OrdersService } from './orders.service.js';
   imports: [
     TypeOrmModule.forFeature([Order]),
     AuthModule,
-    // The Kafka producer we use to publish order events.
+
     ClientsModule.registerAsync([
       {
         name: KAFKA_CLIENT,
@@ -21,8 +21,6 @@ import { OrdersService } from './orders.service.js';
         useFactory: (config: ConfigService) => ({
           transport: Transport.KAFKA,
           options: {
-            // We only SEND messages here. Without this, the client also joins a
-            // consumer group, which slows down start and shutdown.
             producerOnlyMode: true,
             client: {
               clientId: 'orderhub',

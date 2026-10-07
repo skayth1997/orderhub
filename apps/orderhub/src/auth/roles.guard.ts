@@ -9,7 +9,6 @@ import type { AuthenticatedRequest } from './auth.guard.js';
 import { ROLES_KEY } from './roles.decorator.js';
 import { UserRole } from '../users/user.entity.js';
 
-// Must run AFTER AuthGuard, because it reads request.user.
 @Injectable()
 export class RolesGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
@@ -20,7 +19,6 @@ export class RolesGuard implements CanActivate {
       [context.getHandler(), context.getClass()],
     );
 
-    // No @Roles() on this route: any logged-in user may enter.
     if (!allowedRoles) {
       return true;
     }
