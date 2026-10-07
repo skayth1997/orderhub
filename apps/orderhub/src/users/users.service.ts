@@ -12,6 +12,18 @@ export class UsersService {
     private readonly users: Repository<User>,
   ) {}
 
+  async findAllForTenant(tenantId: string) {
+    const users = await this.users.find({
+      where: { tenantId },
+      order: { email: 'ASC' },
+    });
+    return users.map((user) => ({
+      id: user.id,
+      email: user.email,
+      role: user.role,
+    }));
+  }
+
   async create(dto: CreateUserDto, tenantId: string) {
     const email = dto.email.toLowerCase();
     if (await this.users.findOneBy({ email })) {

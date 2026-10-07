@@ -29,6 +29,15 @@ export class StockService {
     return `stock:${tenantId}:${product}`;
   }
 
+  findAll(tenantId: string, page = 1, limit = 20): Promise<Stock[]> {
+    return this.stock.find({
+      where: { tenantId },
+      order: { product: 'ASC' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+  }
+
   async get(tenantId: string, product: string): Promise<Stock> {
     const key = this.cacheKey(tenantId, product);
 

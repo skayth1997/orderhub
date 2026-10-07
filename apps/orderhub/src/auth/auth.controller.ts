@@ -8,9 +8,12 @@ import {
   Query,
   Req,
   Res,
+  UseGuards,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { randomUUID } from 'node:crypto';
+import { AuthGuard } from './auth.guard.js';
+import type { AuthenticatedRequest } from './auth.guard.js';
 import { AuthService } from './auth.service.js';
 import { LoginDto } from './dto/login.dto.js';
 import { RegisterDto } from './dto/register.dto.js';
@@ -34,6 +37,12 @@ export class AuthController {
   @HttpCode(200)
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto);
+  }
+
+  @Get('me')
+  @UseGuards(AuthGuard)
+  me(@Req() req: AuthenticatedRequest) {
+    return this.authService.me(req.user.sub);
   }
 
   @Get('google')

@@ -74,6 +74,22 @@ export class AuthService {
     return this.createToken(user);
   }
 
+  async me(userId: string) {
+    const user = await this.dataSource
+      .getRepository(User)
+      .findOne({ where: { id: userId }, relations: { tenant: true } });
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+    return {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      tenantId: user.tenantId,
+      companyName: user.tenant.name,
+    };
+  }
+
   async createToken(user: User): Promise<{ accessToken: string }> {
     const accessToken = await this.jwtService.signAsync({
       sub: user.id,

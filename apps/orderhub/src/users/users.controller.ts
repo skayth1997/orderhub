@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '../auth/auth.guard.js';
 import type { AuthenticatedRequest } from '../auth/auth.guard.js';
 import { Roles } from '../auth/roles.decorator.js';
@@ -11,6 +11,12 @@ import { UsersService } from './users.service.js';
 @UseGuards(AuthGuard, RolesGuard)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
+
+  @Get()
+  @Roles(UserRole.Admin)
+  findAll(@Req() req: AuthenticatedRequest) {
+    return this.usersService.findAllForTenant(req.user.tenantId);
+  }
 
   @Post()
   @Roles(UserRole.Admin)

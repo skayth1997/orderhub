@@ -4,6 +4,7 @@ import {
   Get,
   Param,
   Put,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -12,6 +13,7 @@ import type { AuthenticatedRequest } from '../auth/auth.guard.js';
 import { Roles } from '../auth/roles.decorator.js';
 import { RolesGuard } from '../auth/roles.guard.js';
 import { UserRole } from '../auth/user-role.js';
+import { PaginationQueryDto } from './dto/pagination-query.dto.js';
 import { SetStockDto } from './dto/set-stock.dto.js';
 import { Stock } from './stock.entity.js';
 import { StockService } from './stock.service.js';
@@ -20,6 +22,18 @@ import { StockService } from './stock.service.js';
 @UseGuards(AuthGuard, RolesGuard)
 export class StockController {
   constructor(private readonly stockService: StockService) {}
+
+  @Get()
+  findAll(
+    @Req() req: AuthenticatedRequest,
+    @Query() query: PaginationQueryDto,
+  ): Promise<Stock[]> {
+    return this.stockService.findAll(
+      req.user.tenantId,
+      query.page,
+      query.limit,
+    );
+  }
 
   @Get(':product')
   get(
