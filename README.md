@@ -117,7 +117,7 @@ You need Node 24, pnpm and Docker.
 ### Tests
 
 ```bash
-pnpm test        # unit tests
+pnpm test        # unit tests (there are none yet)
 pnpm test:e2e    # e2e tests, needs docker compose running (uses the database orderhub_test)
 pnpm lint
 ```
@@ -195,6 +195,5 @@ To test the failure paths, create orders for the products `BROKEN` (inventory fa
 - **Data:** product names must match exactly. Old processed events and sent outbox rows are never deleted. Lists are paged but return no total count. Offset pagination gets slow on very large tables.
 - **Rate limiting:** only the orders app has it, with a fixed window, and it lets requests through if Redis is down.
 - **Observability:** logs only. No metrics, tracing, health checks or alerts.
-- **Tests:** only 1 unit test and 6 e2e tests (orders security). The inventory, notifications, outbox, GraphQL, Google login and the workers have no automated tests. The e2e tests need Docker services running.
+- **Tests:** no unit tests and only 5 e2e tests (orders security). The inventory, notifications, outbox, GraphQL, Google login and the workers have no automated tests. The e2e tests need Docker services running.
 - **Load test:** one local run with everything on one machine. It is not a capacity number.
-- **Cleanup left:** the default Hello World endpoint and its tests are still in the orders app.
