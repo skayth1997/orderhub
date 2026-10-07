@@ -1,8 +1,10 @@
+import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import { useAuth } from '../auth';
+import { Card, ErrorText, Field, buttonClass, inputClass } from '../ui';
 
 export function Register() {
   const { token, login } = useAuth();
@@ -10,66 +12,77 @@ export function Register() {
   const [companyName, setCompanyName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+
+  const mutation = useMutation({
+    mutationFn: async () => {
+      await api('orderhub', '/auth/register', {
+        method: 'POST',
+        body: { companyName, email, password },
+      });
+      return api<{ accessToken: string }>('orderhub', '/auth/login', {
+        method: 'POST',
+        body: { email, password },
+      });
+    },
+    onSuccess: (result) => {
+      login(result.accessToken);
+      navigate('/orders');
+    },
+  });
 
   if (token) {
     return <Navigate to="/orders" replace />;
   }
 
-  async function submit(event: FormEvent) {
+  function submit(event: FormEvent) {
     event.preventDefault();
-    setError('');
-    try {
-      await api('orderhub', '/auth/register', {
-        method: 'POST',
-        body: { companyName, email, password },
-      });
-      const result = await api<{ accessToken: string }>(
-        'orderhub',
-        '/auth/login',
-        { method: 'POST', body: { email, password } },
-      );
-      login(result.accessToken);
-      navigate('/orders');
-    } catch (err) {
-      setError((err as Error).message);
-    }
+    mutation.mutate();
   }
 
   return (
-    <form className="card narrow" onSubmit={submit}>
-      <h1>Create your company</h1>
-      <label>
-        Company name
-        <input
-          value={companyName}
-          onChange={(e) => setCompanyName(e.target.value)}
-          required
-        />
-      </label>
-      <label>
-        Email
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-      </label>
-      <label>
-        Password
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-      </label>
-      {error && <p className="error">{error}</p>}
-      <button type="submit">Register</button>
-      <p className="muted">
-        Already have an account? <Link to="/login">Log in</Link>
-      </p>
-    </form>
+    <Card title="Register your company" narrow>
+      <form onSubmit={submit}>
+        <Field label="Company name">
+          <input
+            className={inputClass}
+            value={companyName}
+            onChange={(e) => setCompanyName(e.target.value)}
+            required
+          />
+        </Field>
+        <Field label="Email">
+          <input
+            className={inputClass}
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+        </Field>
+        <Field label="Password">
+          <input
+            className={inputClass}
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+        </Field>
+        <ErrorText error={mutation.error} />
+        <button
+          className={buttonClass}
+          type="submit"
+          disabled={mutation.isPending}
+        >
+          Register
+        </button>
+        <p className="mt-4 text-sm text-slate-500">
+          Already have an account?{' '}
+          <Link className="text-blue-600 hover:underline" to="/login">
+            Log in
+          </Link>
+        </p>
+      </form>
+    </Card>
   );
 }

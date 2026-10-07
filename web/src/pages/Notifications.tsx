@@ -1,42 +1,40 @@
-import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
 import { api } from '../api';
 import type { Notification } from '../api';
+import { Card, ErrorText } from '../ui';
 import { Pager } from './Pager';
 
 const LIMIT = 10;
 
 export function Notifications() {
   const [page, setPage] = useState(1);
-  const [items, setItems] = useState<Notification[]>([]);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    api<Notification[]>(
-      'notifications',
-      `/notifications?page=${page}&limit=${LIMIT}`,
-    )
-      .then(setItems)
-      .catch((err: Error) => setError(err.message));
-  }, [page]);
+  const { data: items = [], error } = useQuery({
+    queryKey: ['notifications', page],
+    queryFn: () =>
+      api<Notification[]>(
+        'notifications',
+        `/notifications?page=${page}&limit=${LIMIT}`,
+      ),
+  });
 
   return (
-    <div className="card">
-      <h1>Notifications</h1>
-      {error && <p className="error">{error}</p>}
-      <ul className="list">
+    <Card title="Notifications">
+      <ErrorText error={error} />
+      <ul>
         {items.map((item) => (
-          <li key={item._id}>
+          <li key={item._id} className="border-b border-slate-100 py-2 text-sm">
             <div>{item.message}</div>
-            <div className="muted">
+            <div className="text-slate-500">
               {new Date(item.createdAt).toLocaleString()}
             </div>
           </li>
         ))}
       </ul>
       {items.length === 0 && !error && (
-        <p className="muted">No notifications yet.</p>
+        <p className="text-sm text-slate-500">No notifications yet.</p>
       )}
       <Pager page={page} hasNext={items.length === LIMIT} onChange={setPage} />
-    </div>
+    </Card>
   );
 }

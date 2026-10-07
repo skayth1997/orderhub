@@ -1,3 +1,5 @@
+import { buttonClass } from '../ui';
+
 interface PagerProps {
   page: number;
   hasNext: boolean;
@@ -6,12 +8,20 @@ interface PagerProps {
 
 export function Pager({ page, hasNext, onChange }: PagerProps) {
   return (
-    <div className="pager">
-      <button disabled={page === 1} onClick={() => onChange(page - 1)}>
+    <div className="mt-4 flex items-center gap-3 text-sm">
+      <button
+        className={buttonClass}
+        disabled={page === 1}
+        onClick={() => onChange(page - 1)}
+      >
         Previous
       </button>
       <span>Page {page}</span>
-      <button disabled={!hasNext} onClick={() => onChange(page + 1)}>
+      <button
+        className={buttonClass}
+        disabled={!hasNext}
+        onClick={() => onChange(page + 1)}
+      >
         Next
       </button>
     </div>

@@ -1,4 +1,4 @@
-import { getToken } from './auth';
+import { UNAUTHORIZED_EVENT, getToken } from './auth';
 
 const services = {
   orderhub: '/api/orderhub',
@@ -22,6 +22,10 @@ export async function api<T>(
     },
     body: options.body ? JSON.stringify(options.body) : undefined,
   });
+
+  if (response.status === 401 && token) {
+    window.dispatchEvent(new Event(UNAUTHORIZED_EVENT));
+  }
 
   if (!response.ok) {
     const error = await response.json().catch(() => null);

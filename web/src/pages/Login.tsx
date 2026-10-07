@@ -1,65 +1,74 @@
+import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import { useAuth } from '../auth';
+import { Card, ErrorText, Field, buttonClass, inputClass } from '../ui';
 
 export function Login() {
   const { token, login } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+
+  const mutation = useMutation({
+    mutationFn: () =>
+      api<{ accessToken: string }>('orderhub', '/auth/login', {
+        method: 'POST',
+        body: { email, password },
+      }),
+    onSuccess: (result) => {
+      login(result.accessToken);
+      navigate('/orders');
+    },
+  });
 
   if (token) {
     return <Navigate to="/orders" replace />;
   }
 
-  async function submit(event: FormEvent) {
+  function submit(event: FormEvent) {
     event.preventDefault();
-    setError('');
-    try {
-      const result = await api<{ accessToken: string }>(
-        'orderhub',
-        '/auth/login',
-        {
-          method: 'POST',
-          body: { email, password },
-        },
-      );
-      login(result.accessToken);
-      navigate('/orders');
-    } catch (err) {
-      setError((err as Error).message);
-    }
+    mutation.mutate();
   }
 
   return (
-    <form className="card narrow" onSubmit={submit}>
-      <h1>Log in</h1>
-      <label>
-        Email
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-      </label>
-      <label>
-        Password
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-      </label>
-      {error && <p className="error">{error}</p>}
-      <button type="submit">Log in</button>
-      <p className="muted">
-        New here? <Link to="/register">Create a company</Link>
-      </p>
-    </form>
+    <Card title="Log in" narrow>
+      <form onSubmit={submit}>
+        <Field label="Email">
+          <input
+            className={inputClass}
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+        </Field>
+        <Field label="Password">
+          <input
+            className={inputClass}
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+        </Field>
+        <ErrorText error={mutation.error} />
+        <button
+          className={buttonClass}
+          type="submit"
+          disabled={mutation.isPending}
+        >
+          Log in
+        </button>
+        <p className="mt-4 text-sm text-slate-500">
+          New here?{' '}
+          <Link className="text-blue-600 hover:underline" to="/register">
+            Create a company
+          </Link>
+        </p>
+      </form>
+    </Card>
   );
 }
