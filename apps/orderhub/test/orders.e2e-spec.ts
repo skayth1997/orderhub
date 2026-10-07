@@ -42,7 +42,9 @@ describe('Orders security (e2e)', () => {
 
     app = moduleRef.createNestApplication();
 
-    app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
+    app.useGlobalPipes(
+      new ValidationPipe({ whitelist: true, transform: true }),
+    );
     await app.init();
     dataSource = app.get(DataSource);
 

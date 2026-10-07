@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from '../auth/auth.module.js';
+import { RateLimitModule } from '../rate-limit/rate-limit.module.js';
 import { KAFKA_CLIENT } from './events/order-created.event.js';
 import { Order } from './order.entity.js';
 import { OutboxEvent } from './outbox/outbox-event.entity.js';
@@ -16,6 +17,7 @@ import { OrdersService } from './orders.service.js';
   imports: [
     TypeOrmModule.forFeature([Order, OutboxEvent]),
     AuthModule,
+    RateLimitModule,
 
     ClientsModule.registerAsync([
       {

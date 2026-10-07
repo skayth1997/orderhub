@@ -55,10 +55,16 @@ export class NotificationsService implements OnModuleInit {
     }
   }
 
-  findForTenant(tenantId: string): Promise<Notification[]> {
+  findForTenant(
+    tenantId: string,
+    page = 1,
+    limit = 20,
+  ): Promise<Notification[]> {
     return this.model
       .find({ tenantId })
       .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
       .select('-__v -eventId')
       .lean()
       .exec();

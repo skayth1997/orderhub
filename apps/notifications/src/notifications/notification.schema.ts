@@ -5,7 +5,7 @@ export class Notification {
   @Prop({ required: true, unique: true })
   eventId: string;
 
-  @Prop({ required: true, index: true })
+  @Prop({ required: true })
   tenantId: string;
 
   @Prop({ required: true })
@@ -18,3 +18,4 @@ export class Notification {
 }
 
 export const NotificationSchema = SchemaFactory.createForClass(Notification);
+NotificationSchema.index({ tenantId: 1, createdAt: -1 });

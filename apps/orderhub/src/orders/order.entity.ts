@@ -3,11 +3,13 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  Index,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 
 @ObjectType()
 @Entity('orders')
+@Index(['tenantId', 'createdAt'])
 export class Order {
   @PrimaryGeneratedColumn('uuid')
   @Field(() => ID)

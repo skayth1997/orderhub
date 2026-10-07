@@ -45,10 +45,12 @@ export class OrdersService {
     });
   }
 
-  findAll(tenantId: string): Promise<Order[]> {
+  findAll(tenantId: string, page = 1, limit = 20): Promise<Order[]> {
     return this.orders.find({
       where: { tenantId },
       order: { createdAt: 'DESC' },
+      skip: (page - 1) * limit,
+      take: limit,
     });
   }
 

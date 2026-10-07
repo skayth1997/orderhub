@@ -63,8 +63,6 @@ export class EmailWorker implements OnApplicationBootstrap {
     if (job.product === 'BROKEN-EMAIL') {
       throw new Error('The product BROKEN-EMAIL always fails');
     }
-    this.logger.log(
-      `Email sent to tenant ${job.tenantId}: "${job.message}"`,
-    );
+    this.logger.log(`Email sent to tenant ${job.tenantId}: "${job.message}"`);
   }
 }
