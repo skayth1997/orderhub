@@ -134,9 +134,11 @@ The seed creates "Demo Company", 7 products with stock, and 12 orders (some are 
 
 | | |
 |---|---|
-| ![Login](docs/screenshots/01-login.png) | ![Orders](docs/screenshots/02-orders.png) |
-| ![New order](docs/screenshots/03-new-order.png) | ![Stock](docs/screenshots/04-stock.png) |
-| ![Notifications](docs/screenshots/05-notifications.png) | ![Team](docs/screenshots/06-team.png) |
+| ![Login](docs/screenshots/app/01-login.png) | ![Orders](docs/screenshots/app/17-orders-full-page.png) |
+| ![New order](docs/screenshots/app/10-new-order-filled.png) | ![Stock](docs/screenshots/app/12-stock.png) |
+| ![Team](docs/screenshots/app/14-team.png) | ![Empty state](docs/screenshots/app/18-empty-orders.png) |
+
+More screenshots (validation errors, 404, viewer and manager roles, mobile) are in [`docs/screenshots`](docs/screenshots).
 
 ### Tests
 
