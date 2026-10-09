@@ -114,6 +114,30 @@ You need Node 24, pnpm and Docker.
 
    GraphQL is at `POST /graphql` (queries `orders`, `order(id)`, mutation `createOrder`).
 
+### Demo data and login
+
+With the three apps running, fill the system with demo data (safe to run twice):
+
+```bash
+pnpm seed
+```
+
+Then open http://localhost:5173 and log in:
+
+| Email | Password | Role |
+|---|---|---|
+| `admin@demo.com` | `Demo12345` | admin |
+| `manager@demo.com` | `Demo12345` | manager |
+| `viewer@demo.com` | `Demo12345` | viewer |
+
+The seed creates "Demo Company", 7 products with stock, and 12 orders (some are rejected on purpose).
+
+| | |
+|---|---|
+| ![Login](docs/screenshots/01-login.png) | ![Orders](docs/screenshots/02-orders.png) |
+| ![New order](docs/screenshots/03-new-order.png) | ![Stock](docs/screenshots/04-stock.png) |
+| ![Notifications](docs/screenshots/05-notifications.png) | ![Team](docs/screenshots/06-team.png) |
+
 ### Tests
 
 ```bash

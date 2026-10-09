@@ -21,7 +21,8 @@
     "start:debug": "nest start orderhub --debug --watch",
     "start:prod:orderhub": "node dist/apps/orderhub/main",
     "start:prod:inventory": "node dist/apps/inventory/main",
-    "start:prod:notifications": "node dist/apps/notifications/main"
+    "start:prod:notifications": "node dist/apps/notifications/main",
+    "seed": "node scripts/seed.ts"
   },
   "dependencies": {
     "@apollo/server": "^5.5.1",
